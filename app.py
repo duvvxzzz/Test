@@ -250,7 +250,7 @@ if "chat_session" not in st.session_state:
     """
     try:
         model = genai.GenerativeModel(
-            model_name='gemini-2.5-flash',
+            model_name='gemini-2.0-flash',
             tools=[check_environment, get_action_recommendation],
             system_instruction=system_prompt
         )
