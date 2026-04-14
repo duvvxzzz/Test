@@ -13,7 +13,7 @@ genai.configure(api_key=GEMINI_API_KEY)
 # --- CẤU HÌNH ĐƯỜNG DẪN BACKEND ---
 # Khi chạy ở máy tính: Để "http://127.0.0.1:8000"
 # Khi đưa lên mây: Đổi thành link Render của bạn (VD: "https://aqua-ai-backend.onrender.com")
-BACKEND_URL = "http://127.0.0.1:8000"
+BACKEND_URL = "https://test-0hc8.onrender.com"
 
 # 2. KHAI BÁO TOOLS
 def check_environment(location: str) -> dict:
