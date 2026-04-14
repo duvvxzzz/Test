@@ -277,15 +277,24 @@ with st.sidebar:
     <div style="font-size:0.67rem;font-weight:600;color:#6b6b6b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.6rem;">Trạng thái hệ thống</div>
     """, unsafe_allow_html=True)
 
+    # Render free tier: route "/" có thể trống, dùng endpoint thực tế để ping
+    # Tăng timeout lên 15s để chờ wake-up
     try:
-        r = requests.get(f"{BACKEND_URL}/", timeout=3)
-        backend_ok = r.status_code == 200
-    except:
+        r = requests.get(
+            f"{BACKEND_URL}/check-environment?location=test",
+            timeout=15
+        )
+        backend_ok = r.status_code in [200, 422, 400]  # 422/400 = server sống, chỉ thiếu param
+    except requests.exceptions.Timeout:
+        backend_ok = None   # None = đang wake up
+    except Exception:
         backend_ok = False
 
     badge_style = "padding:7px 10px;border-radius:8px;margin-bottom:6px;font-size:0.81rem;"
-    if backend_ok:
+    if backend_ok is True:
         st.markdown(f'<div style="{badge_style}background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);color:#6ee7b7;">● Backend: Online</div>', unsafe_allow_html=True)
+    elif backend_ok is None:
+        st.markdown(f'<div style="{badge_style}background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);color:#fcd34d;">⏳ Backend: Đang khởi động...</div>', unsafe_allow_html=True)
     else:
         st.markdown(f'<div style="{badge_style}background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#fca5a5;">● Backend: Offline</div>', unsafe_allow_html=True)
 
