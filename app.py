@@ -330,7 +330,7 @@ if "chat_session" not in st.session_state:
     """
     try:
         model = genai.GenerativeModel(
-            model_name='gemini-12.5-flash',
+            model_name='gemini-2.5-flash',
             tools=[check_environment, get_action_recommendation],
             system_instruction=system_prompt
         )
@@ -511,7 +511,7 @@ st.markdown("""
 if not st.session_state.get("messages"):
     c1, c2, c3 = st.columns(3)
     suggestions = [
-        ("🌊", "Thời tiết Bến Tre hôm nay thế nào?", "Kiểm tra thời tiết"),
+        ("🌊", "Thời tiết Hà Nội hôm nay thế nào?", "Kiểm tra thời tiết"),
         ("⚠️", "Dự báo bão ảnh hưởng ao nuôi ra sao?", "Dự báo rủi ro"),
         ("🦠", "Phòng bệnh đốm trắng mùa mưa thế nào?", "Hỏi về dịch bệnh"),
     ]
