@@ -6,7 +6,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from dotenv import load_dotenv
 
-# --- 1. CẤU HÌNH HỆ THỐNG & BẢO MẬT ---
+# --- 1. CẤU HÌNH ---
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if not GEMINI_API_KEY:
@@ -16,522 +16,394 @@ else:
 
 BACKEND_URL = "https://test-0hc8.onrender.com"
 
-# --- 2. THIẾT LẬP GIAO DIỆN ---
 st.set_page_config(
-    page_title="AquaAI – Hệ thống Giám sát Thủy sản",
+    page_title="AquaAI – Giám sát Thủy sản",
     page_icon="🦐",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# CSS toàn diện – fix tất cả lỗi, thiết kế lại từ đầu
 st.markdown("""
 <style>
-    /* ====== IMPORT FONT ====== */
-    @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&family=Sora:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-    /* ====== ROOT VARIABLES ====== */
-    :root {
-        --primary: #0EA5E9;
-        --primary-dark: #0284C7;
-        --secondary: #10B981;
-        --warning: #F59E0B;
-        --danger: #EF4444;
-        --bg-main: #F0F7FF;
-        --bg-card: #FFFFFF;
-        --bg-sidebar: #0F2744;
-        --text-main: #0F172A;
-        --text-muted: #64748B;
-        --border: #CBD5E1;
-        --shadow: 0 4px 20px rgba(14, 165, 233, 0.12);
-    }
+:root {
+    --bg-app:        #212121;
+    --bg-sidebar:    #171717;
+    --bg-card:       #2f2f2f;
+    --bg-card-hover: #383838;
+    --bg-input:      #2f2f2f;
+    --text-primary:  #ececec;
+    --text-secondary:#a0a0a0;
+    --text-muted:    #6b6b6b;
+    --border:        #3a3a3a;
+    --border-light:  #444444;
+    --accent:        #0EA5E9;
+    --accent-green:  #10B981;
+}
 
-    /* ====== GLOBAL APP ====== */
-    .stApp {
-        background-color: var(--bg-main) !important;
-        font-family: 'Be Vietnam Pro', sans-serif !important;
-    }
+*, *::before, *::after { box-sizing: border-box; }
 
-    /* ====== SIDEBAR – Fix màu trắng tinh ====== */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0F2744 0%, #1a3a5c 100%) !important;
-        border-right: none !important;
-    }
+.stApp {
+    background-color: var(--bg-app) !important;
+    font-family: 'Inter', -apple-system, sans-serif !important;
+    color: var(--text-primary) !important;
+}
 
-    [data-testid="stSidebar"] * {
-        color: #E2E8F0 !important;
-    }
+/* === SIDEBAR === */
+[data-testid="stSidebar"] {
+    background-color: var(--bg-sidebar) !important;
+    border-right: 1px solid var(--border) !important;
+}
+/* Đủ padding dưới để nút không bị đè */
+[data-testid="stSidebar"] > div:first-child {
+    padding-bottom: 1rem !important;
+}
+[data-testid="stSidebar"],
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] div,
+[data-testid="stSidebar"] label {
+    color: var(--text-primary) !important;
+}
+[data-testid="stSidebar"] .stButton > button {
+    background: transparent !important;
+    color: var(--text-secondary) !important;
+    border: 1px solid var(--border-light) !important;
+    border-radius: 8px !important;
+    width: 100% !important;
+    font-size: 0.85rem !important;
+    font-family: 'Inter', sans-serif !important;
+    padding: 0.5rem 1rem !important;
+    transition: all 0.15s ease !important;
+}
+[data-testid="stSidebar"] .stButton > button:hover {
+    background: rgba(239,68,68,0.12) !important;
+    color: #FCA5A5 !important;
+    border-color: rgba(239,68,68,0.4) !important;
+}
 
-    [data-testid="stSidebar"] .stMarkdown p,
-    [data-testid="stSidebar"] label {
-        color: #CBD5E1 !important;
-    }
+/* === MAIN === */
+.main .block-container {
+    padding: 2rem 2.5rem 4rem 2.5rem !important;
+    max-width: 920px !important;
+    margin: 0 auto !important;
+}
 
-    [data-testid="stSidebar"] h1,
-    [data-testid="stSidebar"] h2,
-    [data-testid="stSidebar"] h3 {
-        color: #F8FAFC !important;
-        font-family: 'Sora', sans-serif !important;
-    }
+/* Đảm bảo tất cả text trong app có màu sáng */
+.stApp p, .stApp li, .stApp span:not(.stMetricDelta),
+.stApp h1, .stApp h2, .stApp h3, .stMarkdown {
+    color: var(--text-primary) !important;
+}
 
-    [data-testid="stSidebar"] .stButton > button {
-        background: rgba(239, 68, 68, 0.15) !important;
-        color: #FCA5A5 !important;
-        border: 1px solid rgba(239, 68, 68, 0.3) !important;
-        border-radius: 10px !important;
-        width: 100% !important;
-        font-family: 'Be Vietnam Pro', sans-serif !important;
-        font-weight: 500 !important;
-        padding: 0.5rem 1rem !important;
-        transition: all 0.2s ease !important;
-    }
+/* === METRIC CARDS === */
+div[data-testid="stMetric"] {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    padding: 1.25rem 1.5rem !important;
+    transition: border-color 0.15s !important;
+}
+div[data-testid="stMetric"]:hover {
+    border-color: var(--border-light) !important;
+}
+[data-testid="stMetricLabel"] p {
+    color: var(--text-muted) !important;
+    font-size: 0.75rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.07em !important;
+    font-weight: 500 !important;
+}
+[data-testid="stMetricValue"] {
+    color: var(--text-primary) !important;
+    font-size: 1.45rem !important;
+    font-weight: 600 !important;
+}
 
-    [data-testid="stSidebar"] .stButton > button:hover {
-        background: rgba(239, 68, 68, 0.3) !important;
-        border-color: rgba(239, 68, 68, 0.6) !important;
-    }
+/* === CHAT – Fix màu chữ bị ẩn === */
+.stChatMessage {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0.5rem 0 !important;
+}
 
-    /* Success/info/warning trong sidebar */
-    [data-testid="stSidebar"] .stAlert {
-        background: rgba(255,255,255,0.08) !important;
-        border: 1px solid rgba(255,255,255,0.15) !important;
-        border-radius: 10px !important;
-    }
+/* User message */
+[data-testid="stChatMessageUser"] {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+}
 
-    /* ====== METRIC CARDS – Fix chữ ẩn ====== */
-    div[data-testid="stMetric"] {
-        background: var(--bg-card) !important;
-        border: 1px solid #E2E8F0 !important;
-        border-radius: 16px !important;
-        padding: 1.5rem !important;
-        box-shadow: var(--shadow) !important;
-        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
-    }
+/* AI message */
+[data-testid="stChatMessageAssistant"] {
+    background-color: transparent !important;
+    border-left: 2px solid var(--accent) !important;
+    border-radius: 0 !important;
+    padding-left: 1rem !important;
+}
 
-    div[data-testid="stMetric"]:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 8px 30px rgba(14, 165, 233, 0.18) !important;
-    }
+/* === FIX CHÍNH: màu chữ trong chat === */
+.stChatMessage p,
+.stChatMessage li,
+.stChatMessage span,
+.stChatMessage strong,
+.stChatMessage em,
+.stChatMessage code,
+[data-testid="stChatMessageContent"] p,
+[data-testid="stChatMessageContent"] li,
+[data-testid="stChatMessageContent"] span,
+[data-testid="stChatMessageContent"] strong,
+[data-testid="stChatMessageContent"] div {
+    color: var(--text-primary) !important;
+}
+.stChatMessage strong {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
 
-    /* Fix màu chữ metric */
-    div[data-testid="stMetric"] label {
-        color: var(--text-muted) !important;
-        font-size: 0.8rem !important;
-        font-weight: 500 !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.05em !important;
-    }
+/* === CHAT INPUT === */
+[data-testid="stChatInput"] {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border-light) !important;
+    border-radius: 12px !important;
+}
+[data-testid="stChatInput"]:focus-within {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 2px rgba(14,165,233,0.18) !important;
+}
+[data-testid="stChatInput"] textarea {
+    color: var(--text-primary) !important;
+    background: transparent !important;
+    font-family: 'Inter', sans-serif !important;
+    caret-color: var(--accent) !important;
+}
+[data-testid="stChatInput"] textarea::placeholder {
+    color: var(--text-muted) !important;
+}
 
-    div[data-testid="stMetricValue"] {
-        color: var(--text-main) !important;
-        font-family: 'Sora', sans-serif !important;
-        font-size: 1.6rem !important;
-        font-weight: 700 !important;
-    }
+/* === PLOTLY CHART === */
+.stPlotlyChart {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    padding: 1rem !important;
+}
 
-    div[data-testid="stMetricDelta"] {
-        font-weight: 600 !important;
-        font-size: 0.85rem !important;
-    }
+/* === HR === */
+hr { border-color: var(--border) !important; margin: 1.5rem 0 !important; }
 
-    /* ====== HEADINGS ====== */
-    h1, h2, h3 {
-        font-family: 'Sora', sans-serif !important;
-        color: var(--text-main) !important;
-    }
+/* === CAPTION === */
+[data-testid="stCaptionContainer"] p,
+.stCaption { color: var(--text-muted) !important; font-size: 0.77rem !important; }
 
-    .stSubheader {
-        color: var(--text-main) !important;
-    }
+/* === SPINNER === */
+.stSpinner > div { border-top-color: var(--accent) !important; }
 
-    /* ====== CHAT MESSAGES – Fix không thấy kết quả ====== */
-    [data-testid="stChatMessageContainer"] {
-        background: transparent !important;
-    }
-
-    /* Toàn bộ khung chat */
-    .stChatMessage {
-        background: var(--bg-card) !important;
-        border: 1px solid #E2E8F0 !important;
-        border-radius: 16px !important;
-        padding: 1rem 1.5rem !important;
-        margin-bottom: 0.75rem !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
-    }
-
-    /* Chat message text – đảm bảo luôn thấy */
-    .stChatMessage p,
-    .stChatMessage span,
-    .stChatMessage div,
-    .stChatMessage li,
-    [data-testid="stChatMessageContent"] * {
-        color: var(--text-main) !important;
-    }
-
-    /* User messages */
-    [data-testid="stChatMessageUser"] {
-        background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%) !important;
-        border-color: #BFDBFE !important;
-    }
-
-    /* Assistant messages */
-    [data-testid="stChatMessageAssistant"] {
-        background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%) !important;
-        border-color: #BBF7D0 !important;
-        border-left: 4px solid var(--secondary) !important;
-    }
-
-    /* Chat input */
-    [data-testid="stChatInput"] {
-        background: var(--bg-card) !important;
-        border: 2px solid var(--border) !important;
-        border-radius: 16px !important;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
-    }
-
-    [data-testid="stChatInput"]:focus-within {
-        border-color: var(--primary) !important;
-        box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15) !important;
-    }
-
-    [data-testid="stChatInput"] textarea {
-        color: var(--text-main) !important;
-        font-family: 'Be Vietnam Pro', sans-serif !important;
-    }
-
-    /* ====== PLOTLY CHART CONTAINER ====== */
-    .stPlotlyChart {
-        background: var(--bg-card) !important;
-        border: 1px solid #E2E8F0 !important;
-        border-radius: 16px !important;
-        padding: 1rem !important;
-        box-shadow: var(--shadow) !important;
-    }
-
-    /* ====== DIVIDER ====== */
-    hr {
-        border-color: #CBD5E1 !important;
-        margin: 1.5rem 0 !important;
-    }
-
-    /* ====== CAPTION ====== */
-    .stCaption, caption {
-        color: var(--text-muted) !important;
-    }
-
-    /* ====== SPINNER ====== */
-    .stSpinner > div {
-        border-top-color: var(--primary) !important;
-    }
-
-    /* ====== MAIN CONTENT PADDING ====== */
-    .main .block-container {
-        padding-top: 2rem !important;
-        padding-bottom: 3rem !important;
-        max-width: 1200px !important;
-    }
-
-    /* ====== CHAT SECTION WRAPPER ====== */
-    .chat-wrapper {
-        max-width: 860px;
-        margin: 0 auto;
-    }
-
-    /* ====== CUSTOM HEADER ====== */
-    .aqua-header {
-        background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 50%, #075985 100%);
-        border-radius: 20px;
-        padding: 2rem 2.5rem;
-        margin-bottom: 2rem;
-        color: white !important;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .aqua-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -10%;
-        width: 300px;
-        height: 300px;
-        background: rgba(255,255,255,0.06);
-        border-radius: 50%;
-    }
-
-    .aqua-header h1 {
-        color: white !important;
-        font-family: 'Sora', sans-serif !important;
-        font-size: 1.8rem !important;
-        margin: 0 !important;
-    }
-
-    .aqua-header p {
-        color: rgba(255,255,255,0.8) !important;
-        margin: 0.3rem 0 0 0 !important;
-    }
-
-    /* ====== SECTION LABEL ====== */
-    .section-label {
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--text-muted);
-        margin-bottom: 0.75rem;
-    }
-
-    /* ====== STATUS BADGE ====== */
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 12px;
-        border-radius: 999px;
-        font-size: 0.78rem;
-        font-weight: 600;
-    }
-
-    .status-online {
-        background: rgba(16, 185, 129, 0.15);
-        color: #065F46;
-        border: 1px solid rgba(16, 185, 129, 0.3);
-    }
+/* === SUGGESTION BUTTONS === */
+.suggest-btn > div > button {
+    background-color: var(--bg-card) !important;
+    color: var(--text-secondary) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    font-size: 0.82rem !important;
+    font-family: 'Inter', sans-serif !important;
+    transition: all 0.15s ease !important;
+    height: auto !important;
+    padding: 0.6rem 1rem !important;
+    white-space: normal !important;
+    text-align: left !important;
+}
+.suggest-btn > div > button:hover {
+    background-color: var(--bg-card-hover) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-light) !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
 
-# --- 3. KHAI BÁO TOOLS ---
+# --- TOOLS ---
 def check_environment(location: str) -> dict:
-    """Kiểm tra thời tiết, độ mặn và rủi ro môi trường."""
     try:
-        response = requests.get(f"{BACKEND_URL}/check-environment?location={location}", timeout=10)
-        return response.json()
+        r = requests.get(f"{BACKEND_URL}/check-environment?location={location}", timeout=10)
+        return r.json()
     except Exception as e:
-        return {"error": f"Không thể kết nối Backend: {str(e)}"}
+        return {"error": str(e)}
 
 def get_action_recommendation(alert_type: str) -> dict:
-    """Lấy hướng dẫn hành động cụ thể."""
     try:
-        response = requests.get(f"{BACKEND_URL}/get-action?alert_type={alert_type}", timeout=10)
-        return response.json()
+        r = requests.get(f"{BACKEND_URL}/get-action?alert_type={alert_type}", timeout=10)
+        return r.json()
     except Exception as e:
         return {"action_recommendation": "Liên hệ kỹ thuật viên ngay lập tức."}
 
 
-# --- 4. KHỞI TẠO AI SESSION ---
+# --- KHỞI TẠO AI ---
 if "chat_session" not in st.session_state:
     system_prompt = """
-    Bạn là Chuyên gia AI hệ thống Aquaculture Intelligence. 
+    Bạn là Chuyên gia AI hệ thống Aquaculture Intelligence.
     Nhiệm vụ: Tư vấn rủi ro môi trường cho doanh nghiệp và bà con nông dân miền Tây.
-    Phong cách: Chuyên nghiệp, tin cậy nhưng gần gũi, dễ hiểu (xưng tôi, gọi bà con).
+    Phong cách: Chuyên nghiệp, tin cậy nhưng gần gũi (xưng tôi, gọi bà con).
     Quy tắc: Luôn check_environment trước, nếu rủi ro phải get_action_recommendation ngay.
-    Trả lời bằng tiếng Việt, rõ ràng, có số liệu cụ thể.
+    Trả lời bằng tiếng Việt, rõ ràng, số liệu cụ thể.
     """
     try:
         model = genai.GenerativeModel(
-            model_name='gemini-2.5-flash',
+            model_name='gemini-1.5-flash-8b',
             tools=[check_environment, get_action_recommendation],
             system_instruction=system_prompt
         )
         st.session_state.chat_session = model.start_chat(enable_automatic_function_calling=True)
         st.session_state.messages = []
     except Exception as e:
-        st.error(f"Lỗi khởi tạo Gemini AI: {str(e)}")
         st.session_state.chat_session = None
+        st.session_state.messages = []
 
 
-# --- 5. SIDEBAR ---
+# ===================== SIDEBAR =====================
 with st.sidebar:
-    # Logo text thay vì ảnh bị lỗi
     st.markdown("""
-    <div style="text-align:center; padding: 1.5rem 0 1rem 0;">
-        <div style="font-size: 3rem;">🦐</div>
-        <div style="font-family: 'Sora', sans-serif; font-size: 1.3rem; font-weight: 700; color: #F8FAFC; margin-top: 0.3rem;">AquaAI</div>
-        <div style="font-size: 0.75rem; color: #94A3B8; margin-top: 0.2rem;">Enterprise Platform v1.0.1</div>
+    <div style="padding:1.4rem 0 1rem 0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:1.5rem;">🦐</span>
+            <div>
+                <div style="font-size:1.05rem;font-weight:700;color:#ececec;letter-spacing:-0.02em;">AquaAI</div>
+                <div style="font-size:0.68rem;color:#6b6b6b;">Enterprise v1.0.1</div>
+            </div>
+        </div>
     </div>
+    <div style="height:1px;background:#3a3a3a;margin-bottom:1.2rem;"></div>
+    <div style="font-size:0.67rem;font-weight:600;color:#6b6b6b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.6rem;">Trạng thái hệ thống</div>
     """, unsafe_allow_html=True)
 
-    st.markdown("---")
-
-    st.markdown("""
-    <div style="padding: 0.75rem 0; font-size: 0.82rem; color: #94A3B8; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em;">
-        Trạng thái hệ thống
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Kiểm tra kết nối Backend
     try:
         r = requests.get(f"{BACKEND_URL}/", timeout=3)
         backend_ok = r.status_code == 200
     except:
         backend_ok = False
 
+    badge_style = "padding:7px 10px;border-radius:8px;margin-bottom:6px;font-size:0.81rem;"
     if backend_ok:
-        st.markdown("""<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);border-radius:10px;margin-bottom:8px;">
-            <span style="color:#34D399;font-size:10px;">●</span>
-            <span style="color:#A7F3D0;font-size:0.82rem;font-weight:500;">Backend: Online</span>
-        </div>""", unsafe_allow_html=True)
+        st.markdown(f'<div style="{badge_style}background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);color:#6ee7b7;">● Backend: Online</div>', unsafe_allow_html=True)
     else:
-        st.markdown("""<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:10px;margin-bottom:8px;">
-            <span style="color:#F87171;font-size:10px;">●</span>
-            <span style="color:#FCA5A5;font-size:0.82rem;font-weight:500;">Backend: Offline</span>
-        </div>""", unsafe_allow_html=True)
+        st.markdown(f'<div style="{badge_style}background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#fca5a5;">● Backend: Offline</div>', unsafe_allow_html=True)
 
-    ai_ok = st.session_state.get("chat_session") is not None
-    if ai_ok:
-        st.markdown("""<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(14,165,233,0.15);border:1px solid rgba(14,165,233,0.3);border-radius:10px;margin-bottom:8px;">
-            <span style="color:#38BDF8;font-size:10px;">●</span>
-            <span style="color:#BAE6FD;font-size:0.82rem;font-weight:500;">Gemini AI: Sẵn sàng</span>
-        </div>""", unsafe_allow_html=True)
+    if st.session_state.get("chat_session"):
+        st.markdown(f'<div style="{badge_style}background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.25);color:#7dd3fc;">● Gemini AI: Sẵn sàng</div>', unsafe_allow_html=True)
     else:
-        st.markdown("""<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:10px;margin-bottom:8px;">
-            <span style="color:#F87171;font-size:10px;">●</span>
-            <span style="color:#FCA5A5;font-size:0.82rem;font-weight:500;">Gemini AI: Lỗi API Key</span>
-        </div>""", unsafe_allow_html=True)
-
-    st.markdown("---")
+        st.markdown(f'<div style="{badge_style}background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#fca5a5;">● Gemini AI: Lỗi API Key</div>', unsafe_allow_html=True)
 
     st.markdown("""
-    <div style="padding: 0.5rem 0; font-size: 0.82rem; color: #94A3B8; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em;">
-        Khu vực theo dõi
-    </div>
+    <div style="height:1px;background:#3a3a3a;margin:1.2rem 0;"></div>
+    <div style="font-size:0.67rem;font-weight:600;color:#6b6b6b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.6rem;">Khu vực theo dõi</div>
     """, unsafe_allow_html=True)
 
-    locations = ["Bến Tre", "Cà Mau", "Sóc Trăng", "Bạc Liêu", "Tiền Giang", "Kiên Giang"]
-    for loc in locations:
-        st.markdown(f"""<div style="padding: 8px 12px; border-radius: 8px; color: #CBD5E1; font-size: 0.84rem; cursor:pointer; margin-bottom:2px;">
-            📍 {loc}
-        </div>""", unsafe_allow_html=True)
+    for loc, dot in [("Bến Tre","🟢"),("Cà Mau","🟡"),("Sóc Trăng","🟢"),("Bạc Liêu","🔴"),("Tiền Giang","🟢"),("Kiên Giang","🟡")]:
+        st.markdown(f'<div style="padding:6px 10px;border-radius:7px;color:#a0a0a0;font-size:0.83rem;margin-bottom:2px;">{dot} {loc}</div>', unsafe_allow_html=True)
 
-    st.markdown("---")
+    st.markdown('<div style="height:1px;background:#3a3a3a;margin:1.2rem 0;"></div>', unsafe_allow_html=True)
 
+    # Nút xóa (không dùng absolute position – tránh đè lên nhau)
     if st.button("🗑️ Xóa lịch sử trò chuyện"):
         st.session_state.messages = []
         st.rerun()
 
-    st.markdown("""
-    <div style="position:absolute; bottom:1.5rem; left:1.5rem; right:1.5rem; text-align:center; font-size:0.7rem; color:#475569;">
-        © 2026 AquaAI Enterprise<br>Giải pháp chuyển đổi số ĐBSCL
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown('<div style="margin-top:1rem;font-size:0.67rem;color:#4a4a4a;text-align:center;line-height:1.7;">© 2026 AquaAI Enterprise<br>Giải pháp số nông nghiệp ĐBSCL</div>', unsafe_allow_html=True)
 
 
-# --- 6. GIAO DIỆN CHÍNH ---
+# ===================== MAIN =====================
 
-# Header đẹp
+# Header
 st.markdown("""
-<div class="aqua-header">
-    <h1>🦐 Trung tâm Giám sát Thủy sản ĐBSCL</h1>
-    <p>Hệ thống AI phân tích môi trường & tư vấn rủi ro cho doanh nghiệp và bà con nông dân</p>
+<div style="margin-bottom:2rem;">
+    <h1 style="font-size:1.4rem;font-weight:700;color:#ececec;margin:0;letter-spacing:-0.02em;">
+        🦐 Trung tâm Giám sát Thủy sản ĐBSCL
+    </h1>
+    <p style="color:#6b6b6b;font-size:0.85rem;margin:0.25rem 0 0 0;">
+        Phân tích môi trường & tư vấn rủi ro theo thời gian thực
+    </p>
 </div>
 """, unsafe_allow_html=True)
 
-# --- METRICS ---
-st.markdown('<div class="section-label">📊 Tổng quan hôm nay</div>', unsafe_allow_html=True)
+# Metrics
+st.markdown('<div style="font-size:0.67rem;font-weight:600;color:#6b6b6b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem;">Tổng quan hôm nay</div>', unsafe_allow_html=True)
 m1, m2, m3, m4 = st.columns(4)
-m1.metric("🌡️ Môi trường", "Tối ưu", help="Dữ liệu từ trạm vệ tinh OWM.")
-m2.metric("⚠️ Chỉ số Rủi ro", "15%", delta="-5%", delta_color="inverse", help="So với tuần trước.")
-m3.metric("📡 Thiết bị Online", "8/8", delta="100%", help="Số trạm đang hoạt động.")
-m4.metric("🦐 Vụ nuôi hiện tại", "Tuần 12", help="Tính từ ngày thả giống.")
+m1.metric("🌡️ Môi trường", "Tối ưu")
+m2.metric("⚠️ Chỉ số rủi ro", "15%", delta="-5%", delta_color="inverse")
+m3.metric("📡 Thiết bị", "8/8 Online")
+m4.metric("🦐 Vụ nuôi", "Tuần 12")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# --- BIỂU ĐỒ PLOTLY (Fix lỗi st.line_chart bị scale sai) ---
-st.markdown('<div class="section-label">📈 Phân tích & Dự báo Rủi ro 7 ngày tới</div>', unsafe_allow_html=True)
+# Biểu đồ
+st.markdown('<div style="font-size:0.67rem;font-weight:600;color:#6b6b6b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem;">Phân tích & Dự báo rủi ro – 7 ngày tới</div>', unsafe_allow_html=True)
 
-days = ["14/4", "15/4", "16/4", "17/4", "18/4", "19/4", "20/4"]
-shock_heat = [10, 15, 12, 45, 80, 20, 15]
-salinity_drop = [5, 5, 8, 30, 95, 40, 10]
+days = ["14/4","15/4","16/4","17/4","18/4","19/4","20/4"]
+shock_heat    = [10, 15, 12, 45, 80, 20, 15]
+salinity_drop = [5,  5,  8,  30, 95, 40, 10]
 
 fig = go.Figure()
-
-fig.add_trace(go.Scatter(
-    x=days, y=shock_heat,
-    name="Sốc nhiệt (%)",
-    mode="lines+markers",
-    line=dict(color="#0EA5E9", width=3),
-    marker=dict(size=8, symbol="circle"),
-    fill="tozeroy",
-    fillcolor="rgba(14,165,233,0.08)"
-))
-
-fig.add_trace(go.Scatter(
-    x=days, y=salinity_drop,
-    name="Giảm mặn (%)",
-    mode="lines+markers",
-    line=dict(color="#10B981", width=3, dash="dot"),
-    marker=dict(size=8, symbol="diamond"),
-    fill="tozeroy",
-    fillcolor="rgba(16,185,129,0.06)"
-))
-
-# Vùng cảnh báo
-fig.add_hrect(y0=50, y1=100, fillcolor="rgba(239,68,68,0.07)",
-              line_width=0, annotation_text="⚠️ Ngưỡng nguy hiểm",
-              annotation_position="top right",
-              annotation_font_color="#EF4444", annotation_font_size=12)
-
+fig.add_trace(go.Scatter(x=days, y=shock_heat, name="Sốc nhiệt (%)",
+    mode="lines+markers", line=dict(color="#0EA5E9", width=2.5),
+    marker=dict(size=7), fill="tozeroy", fillcolor="rgba(14,165,233,0.1)"))
+fig.add_trace(go.Scatter(x=days, y=salinity_drop, name="Giảm mặn (%)",
+    mode="lines+markers", line=dict(color="#10B981", width=2.5, dash="dot"),
+    marker=dict(size=7, symbol="diamond"), fill="tozeroy", fillcolor="rgba(16,185,129,0.07)"))
+fig.add_hrect(y0=50, y1=105, fillcolor="rgba(239,68,68,0.06)", line_width=0,
+    annotation_text="⚠️ Ngưỡng nguy hiểm", annotation_position="top right",
+    annotation_font_color="#EF4444", annotation_font_size=11)
 fig.update_layout(
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="Be Vietnam Pro, sans-serif", color="#0F172A"),
-    legend=dict(
-        orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
-        bgcolor="rgba(255,255,255,0.8)", bordercolor="#E2E8F0", borderwidth=1
-    ),
-    xaxis=dict(
-        gridcolor="#F1F5F9", linecolor="#E2E8F0", tickfont=dict(size=12)
-    ),
-    yaxis=dict(
-        gridcolor="#F1F5F9", linecolor="#E2E8F0", tickfont=dict(size=12),
-        range=[0, 105],
-        ticksuffix="%"
-    ),
+    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+    font=dict(family="Inter, sans-serif", color="#a0a0a0", size=12),
+    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
+        bgcolor="rgba(47,47,47,0.95)", bordercolor="#3a3a3a", borderwidth=1,
+        font=dict(color="#ececec")),
+    xaxis=dict(gridcolor="#2a2a2a", linecolor="#3a3a3a", tickfont=dict(color="#a0a0a0")),
+    yaxis=dict(gridcolor="#2a2a2a", linecolor="#3a3a3a", tickfont=dict(color="#a0a0a0"),
+        range=[0, 105], ticksuffix="%"),
     hovermode="x unified",
-    margin=dict(l=10, r=10, t=40, b=10),
-    height=320,
+    hoverlabel=dict(bgcolor="#2f2f2f", font_color="#ececec", bordercolor="#444"),
+    margin=dict(l=10, r=10, t=40, b=10), height=300,
 )
-
 st.plotly_chart(fig, use_container_width=True)
-st.caption("📡 Dữ liệu AI phân tích từ vệ tinh & trạm đo – Khu vực ĐBSCL. Dự báo Bão ngày 17–18/4.")
+st.caption("📡 Dữ liệu AI phân tích từ vệ tinh & trạm đo khu vực ĐBSCL. Cảnh báo bão dự kiến 17–18/4.")
 
 st.markdown("<br>", unsafe_allow_html=True)
+st.markdown('<div style="height:1px;background:#3a3a3a;margin-bottom:1.5rem;"></div>', unsafe_allow_html=True)
 
-# --- CHATBOX ---
-st.markdown("---")
+# Chat section
 st.markdown("""
-<div style="text-align:center; margin-bottom:1rem;">
-    <div style="font-family:'Sora',sans-serif; font-size:1.3rem; font-weight:700; color:#0F172A;">💬 Cố vấn Thủy sản AI</div>
-    <div style="color:#64748B; font-size:0.85rem; margin-top:0.3rem;">Hỏi bất kỳ điều gì về môi trường ao nuôi, thời tiết, dịch bệnh – AI sẽ trả lời ngay</div>
+<div style="margin-bottom:1rem;">
+    <div style="font-size:0.95rem;font-weight:600;color:#ececec;">💬 Cố vấn Thủy sản AI</div>
+    <div style="color:#6b6b6b;font-size:0.8rem;margin-top:0.2rem;">Hỏi về môi trường ao nuôi, thời tiết, dịch bệnh – AI phân tích và trả lời ngay</div>
 </div>
 """, unsafe_allow_html=True)
 
-# Gợi ý câu hỏi nếu chưa có chat
+# Gợi ý nhanh
 if not st.session_state.get("messages"):
     c1, c2, c3 = st.columns(3)
-    suggestions = [
-        ("🌊", "Thời tiết Hà Nội hôm nay thế nào?", "Kiểm tra thời tiết"),
-        ("⚠️", "Dự báo bão ảnh hưởng ao nuôi ra sao?", "Dự báo rủi ro"),
-        ("🦠", "Phòng bệnh đốm trắng mùa mưa thế nào?", "Hỏi về dịch bệnh"),
-    ]
-    for col, (icon, prompt_text, label) in zip([c1, c2, c3], suggestions):
+    for col, (label, prompt_text) in zip([c1, c2, c3], [
+        ("🌊 Thời tiết hôm nay", "Thời tiết Bến Tre hôm nay thế nào?"),
+        ("⚠️ Dự báo bão", "Bão ảnh hưởng ao nuôi ra sao?"),
+        ("🦠 Phòng bệnh tôm",  "Phòng bệnh đốm trắng mùa mưa thế nào?"),
+    ]):
         with col:
-            if st.button(f"{icon} {label}", key=f"suggest_{label}", use_container_width=True):
-                st.session_state._quick_prompt = prompt_text
+            st.markdown('<div class="suggest-btn">', unsafe_allow_html=True)
+            if st.button(label, key=f"s_{label}", use_container_width=True):
+                st.session_state._qp = prompt_text
                 st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
-# Xử lý quick prompt
-quick_prompt = st.session_state.pop("_quick_prompt", None)
+quick_prompt = st.session_state.pop("_qp", None)
 
-# Hiển thị lịch sử chat
-for message in st.session_state.get("messages", []):
-    avatar = "🧑‍🌾" if message["role"] == "user" else "🤖"
-    with st.chat_message(message["role"], avatar=avatar):
-        st.markdown(message["content"])
+for msg in st.session_state.get("messages", []):
+    avatar = "🧑‍🌾" if msg["role"] == "user" else "🤖"
+    with st.chat_message(msg["role"], avatar=avatar):
+        st.markdown(msg["content"])
 
-# Ô nhập liệu
-prompt = st.chat_input("Hỏi tôi... VD: Thời tiết Bến Tre sao rồi bà con?") or quick_prompt
+prompt = st.chat_input("Nhập câu hỏi... VD: Thời tiết Sóc Trăng sao rồi bà con?") or quick_prompt
 
 if prompt:
     with st.chat_message("user", avatar="🧑‍🌾"):
@@ -540,25 +412,19 @@ if prompt:
 
     with st.chat_message("assistant", avatar="🤖"):
         if not st.session_state.get("chat_session"):
-            st.error("⚠️ AI không hoạt động. Vui lòng kiểm tra GEMINI_API_KEY trong secrets.")
+            st.error("⚠️ AI không hoạt động. Kiểm tra GEMINI_API_KEY.")
         else:
-            with st.spinner("🔍 Đang phân tích dữ liệu trạm đo..."):
+            with st.spinner("Đang phân tích..."):
                 try:
                     response = st.session_state.chat_session.send_message(prompt)
                     reply = response.text
                     st.markdown(reply)
                     st.session_state.messages.append({"role": "assistant", "content": reply})
                 except Exception as e:
-                    err_msg = f"⚠️ Có lỗi xảy ra: {str(e)}"
-                    st.error(err_msg)
-                    st.session_state.messages.append({"role": "assistant", "content": err_msg})
+                    err = f"⚠️ Lỗi: {str(e)}"
+                    st.error(err)
+                    st.session_state.messages.append({"role": "assistant", "content": err})
 
-# --- FOOTER ---
-st.markdown("---")
-st.markdown("""
-<div style="text-align:center; padding: 1rem 0; color: #94A3B8; font-size:0.78rem;">
-    © 2026 <strong style="color:#0EA5E9;">AquaAI Enterprise Platform</strong> &nbsp;|&nbsp; 
-    Giải pháp chuyển đổi số nông nghiệp ĐBSCL &nbsp;|&nbsp; 
-    Powered by Google Gemini AI
-</div>
-""", unsafe_allow_html=True)
+# Footer
+st.markdown('<div style="height:1px;background:#3a3a3a;margin:2.5rem 0 1rem 0;"></div>', unsafe_allow_html=True)
+st.markdown('<div style="text-align:center;color:#4a4a4a;font-size:0.73rem;">© 2026 <span style="color:#0EA5E9;font-weight:500;">AquaAI Enterprise</span> · Giải pháp chuyển đổi số nông nghiệp ĐBSCL · Powered by Google Gemini AI</div>', unsafe_allow_html=True)
