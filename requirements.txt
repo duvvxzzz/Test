@@ -1,6 +1,6 @@
-fastapi
-uvicorn
-requests
-python-dotenv
-google-generativeai
 streamlit
+google-generativeai
+requests
+pandas
+plotly
+python-dotenv
