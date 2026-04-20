@@ -2,7 +2,6 @@ import streamlit as st
 import google.generativeai as genai
 import requests
 import os
-import pandas as pd
 import plotly.graph_objects as go
 from dotenv import load_dotenv
 
@@ -25,28 +24,47 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Display:wght@400;500;700&family=Roboto:wght@300;400;500&display=swap');
 
 :root {
-    --bg-app:        #212121;
-    --bg-sidebar:    #171717;
-    --bg-card:       #2f2f2f;
-    --bg-card-hover: #383838;
-    --bg-input:      #2f2f2f;
-    --text-primary:  #ececec;
-    --text-secondary:#a0a0a0;
-    --text-muted:    #6b6b6b;
-    --border:        #3a3a3a;
-    --border-light:  #444444;
-    --accent:        #0EA5E9;
-    --accent-green:  #10B981;
+    --bg-app:         #f8f9fa;
+    --bg-sidebar:     #ffffff;
+    --bg-card:        #ffffff;
+    --bg-card-hover:  #f0f4f9;
+    --bg-input:       #f0f4f9;
+    --text-primary:   #1f1f1f;
+    --text-secondary: #444746;
+    --text-muted:     #747775;
+    --border:         #e3e3e3;
+    --border-light:   #c4c7c5;
+    --accent-blue:    #0b57d0;
+    --accent-pink:    #c2185b;
+    --accent-purple:  #7c4dff;
+    --accent-green:   #137333;
+    --gradient-hero:  linear-gradient(135deg, #c2185b 0%, #7c4dff 50%, #0b57d0 100%);
+    --shadow-card:    0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-hover:   0 4px 16px rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.06);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
 
+/* Reset Streamlit defaults */
 .stApp {
     background-color: var(--bg-app) !important;
-    font-family: 'Inter', -apple-system, sans-serif !important;
+    font-family: 'Roboto', 'Google Sans', sans-serif !important;
+    color: var(--text-primary) !important;
+}
+
+/* Remove default padding */
+.main .block-container {
+    padding: 2.5rem 3rem 4rem 3rem !important;
+    max-width: 960px !important;
+    margin: 0 auto !important;
+}
+
+/* All text */
+.stApp p, .stApp li, .stApp span:not(.stMetricDelta),
+.stApp h1, .stApp h2, .stApp h3, .stMarkdown {
     color: var(--text-primary) !important;
 }
 
@@ -54,8 +72,8 @@ st.markdown("""
 [data-testid="stSidebar"] {
     background-color: var(--bg-sidebar) !important;
     border-right: 1px solid var(--border) !important;
+    box-shadow: none !important;
 }
-/* Đủ padding dưới để nút không bị đè */
 [data-testid="stSidebar"] > div:first-child {
     padding-bottom: 1rem !important;
 }
@@ -69,81 +87,69 @@ st.markdown("""
 [data-testid="stSidebar"] .stButton > button {
     background: transparent !important;
     color: var(--text-secondary) !important;
-    border: 1px solid var(--border-light) !important;
-    border-radius: 8px !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 100px !important;
     width: 100% !important;
     font-size: 0.85rem !important;
-    font-family: 'Inter', sans-serif !important;
-    padding: 0.5rem 1rem !important;
-    transition: all 0.15s ease !important;
+    font-family: 'Google Sans', 'Roboto', sans-serif !important;
+    padding: 0.5rem 1.25rem !important;
+    transition: all 0.2s ease !important;
+    letter-spacing: 0.01em !important;
 }
 [data-testid="stSidebar"] .stButton > button:hover {
-    background: rgba(239,68,68,0.12) !important;
-    color: #FCA5A5 !important;
-    border-color: rgba(239,68,68,0.4) !important;
-}
-
-/* === MAIN === */
-.main .block-container {
-    padding: 2rem 2.5rem 4rem 2.5rem !important;
-    max-width: 920px !important;
-    margin: 0 auto !important;
-}
-
-/* Đảm bảo tất cả text trong app có màu sáng */
-.stApp p, .stApp li, .stApp span:not(.stMetricDelta),
-.stApp h1, .stApp h2, .stApp h3, .stMarkdown {
-    color: var(--text-primary) !important;
+    background: #fce8e6 !important;
+    color: #c5221f !important;
+    border-color: #f5c6c3 !important;
 }
 
 /* === METRIC CARDS === */
 div[data-testid="stMetric"] {
     background-color: var(--bg-card) !important;
     border: 1px solid var(--border) !important;
-    border-radius: 12px !important;
+    border-radius: 16px !important;
     padding: 1.25rem 1.5rem !important;
-    transition: border-color 0.15s !important;
+    box-shadow: var(--shadow-card) !important;
+    transition: box-shadow 0.2s ease, transform 0.2s ease !important;
 }
 div[data-testid="stMetric"]:hover {
-    border-color: var(--border-light) !important;
+    box-shadow: var(--shadow-hover) !important;
+    transform: translateY(-1px) !important;
 }
 [data-testid="stMetricLabel"] p {
     color: var(--text-muted) !important;
     font-size: 0.75rem !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.07em !important;
+    letter-spacing: 0.08em !important;
     font-weight: 500 !important;
+    font-family: 'Google Sans', 'Roboto', sans-serif !important;
 }
 [data-testid="stMetricValue"] {
     color: var(--text-primary) !important;
-    font-size: 1.45rem !important;
+    font-size: 1.4rem !important;
     font-weight: 600 !important;
+    font-family: 'Google Sans', 'Roboto', sans-serif !important;
 }
 
-/* === CHAT – Fix màu chữ bị ẩn === */
+/* === CHAT === */
 .stChatMessage {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
     padding: 0.5rem 0 !important;
 }
-
-/* User message */
 [data-testid="stChatMessageUser"] {
-    background-color: var(--bg-card) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 12px !important;
+    background-color: #e8f0fe !important;
+    border: none !important;
+    border-radius: 20px 20px 4px 20px !important;
+    padding: 0.75rem 1rem !important;
 }
-
-/* AI message */
 [data-testid="stChatMessageAssistant"] {
     background-color: transparent !important;
-    border-left: 2px solid var(--accent) !important;
+    border-left: 3px solid transparent !important;
+    border-image: var(--gradient-hero) 1 !important;
     border-radius: 0 !important;
     padding-left: 1rem !important;
 }
-
-/* === FIX CHÍNH: màu chữ trong chat === */
 .stChatMessage p,
 .stChatMessage li,
 .stChatMessage span,
@@ -157,26 +163,24 @@ div[data-testid="stMetric"]:hover {
 [data-testid="stChatMessageContent"] div {
     color: var(--text-primary) !important;
 }
-.stChatMessage strong {
-    color: #ffffff !important;
-    font-weight: 600 !important;
-}
 
 /* === CHAT INPUT === */
 [data-testid="stChatInput"] {
     background-color: var(--bg-card) !important;
     border: 1px solid var(--border-light) !important;
-    border-radius: 12px !important;
+    border-radius: 28px !important;
+    box-shadow: var(--shadow-card) !important;
+    transition: box-shadow 0.2s, border-color 0.2s !important;
 }
 [data-testid="stChatInput"]:focus-within {
-    border-color: var(--accent) !important;
-    box-shadow: 0 0 0 2px rgba(14,165,233,0.18) !important;
+    border-color: #0b57d0 !important;
+    box-shadow: 0 0 0 3px rgba(11,87,208,0.12) !important;
 }
 [data-testid="stChatInput"] textarea {
     color: var(--text-primary) !important;
     background: transparent !important;
-    font-family: 'Inter', sans-serif !important;
-    caret-color: var(--accent) !important;
+    font-family: 'Roboto', sans-serif !important;
+    caret-color: var(--accent-blue) !important;
 }
 [data-testid="stChatInput"] textarea::placeholder {
     color: var(--text-muted) !important;
@@ -186,38 +190,85 @@ div[data-testid="stMetric"]:hover {
 .stPlotlyChart {
     background-color: var(--bg-card) !important;
     border: 1px solid var(--border) !important;
-    border-radius: 12px !important;
+    border-radius: 16px !important;
     padding: 1rem !important;
+    box-shadow: var(--shadow-card) !important;
 }
 
 /* === HR === */
-hr { border-color: var(--border) !important; margin: 1.5rem 0 !important; }
+hr {
+    border: none !important;
+    border-top: 1px solid var(--border) !important;
+    margin: 1.5rem 0 !important;
+}
 
 /* === CAPTION === */
 [data-testid="stCaptionContainer"] p,
-.stCaption { color: var(--text-muted) !important; font-size: 0.77rem !important; }
+.stCaption {
+    color: var(--text-muted) !important;
+    font-size: 0.77rem !important;
+}
 
 /* === SPINNER === */
-.stSpinner > div { border-top-color: var(--accent) !important; }
+.stSpinner > div { border-top-color: var(--accent-blue) !important; }
 
-/* === SUGGESTION BUTTONS === */
+/* === SUGGESTION CARDS (Gemini style) === */
 .suggest-btn > div > button {
     background-color: var(--bg-card) !important;
     color: var(--text-secondary) !important;
     border: 1px solid var(--border) !important;
-    border-radius: 10px !important;
-    font-size: 0.82rem !important;
-    font-family: 'Inter', sans-serif !important;
-    transition: all 0.15s ease !important;
-    height: auto !important;
-    padding: 0.6rem 1rem !important;
+    border-radius: 16px !important;
+    font-size: 0.85rem !important;
+    font-family: 'Roboto', 'Google Sans', sans-serif !important;
+    transition: all 0.2s ease !important;
+    height: 90px !important;
+    padding: 1rem 1.1rem !important;
     white-space: normal !important;
     text-align: left !important;
+    box-shadow: var(--shadow-card) !important;
+    line-height: 1.4 !important;
+    vertical-align: top !important;
 }
 .suggest-btn > div > button:hover {
     background-color: var(--bg-card-hover) !important;
     color: var(--text-primary) !important;
-    border-color: var(--border-light) !important;
+    border-color: #b0b0b0 !important;
+    box-shadow: var(--shadow-hover) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Hero greeting gradient text */
+.hero-greeting {
+    font-family: 'Google Sans Display', 'Google Sans', 'Roboto', sans-serif !important;
+    font-size: 2.2rem !important;
+    font-weight: 400 !important;
+    background: var(--gradient-hero);
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    margin: 0 !important;
+    line-height: 1.2 !important;
+}
+
+.hero-sub {
+    font-family: 'Google Sans', 'Roboto', sans-serif !important;
+    font-size: 2rem !important;
+    font-weight: 300 !important;
+    color: #c4c7c5 !important;
+    margin: 0 !important;
+    line-height: 1.3 !important;
+}
+
+/* Badge style for status */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 100px;
+    font-size: 0.8rem;
+    font-family: 'Roboto', sans-serif;
+    margin-bottom: 5px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -268,75 +319,68 @@ with st.sidebar:
         <div style="display:flex;align-items:center;gap:10px;">
             <span style="font-size:1.5rem;">🦐</span>
             <div>
-                <div style="font-size:1.05rem;font-weight:700;color:#ececec;letter-spacing:-0.02em;">AquaAI</div>
-                <div style="font-size:0.68rem;color:#6b6b6b;">Enterprise v1.0.1</div>
+                <div style="font-size:1.05rem;font-weight:600;color:#1f1f1f;letter-spacing:-0.01em;font-family:'Google Sans',sans-serif;">AquaAI</div>
+                <div style="font-size:0.68rem;color:#747775;font-family:'Roboto',sans-serif;">Enterprise v1.0.1</div>
             </div>
         </div>
     </div>
-    <div style="height:1px;background:#3a3a3a;margin-bottom:1.2rem;"></div>
-    <div style="font-size:0.67rem;font-weight:600;color:#6b6b6b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.6rem;">Trạng thái hệ thống</div>
+    <div style="height:1px;background:#e3e3e3;margin-bottom:1.2rem;"></div>
+    <div style="font-size:0.67rem;font-weight:500;color:#747775;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem;font-family:'Roboto',sans-serif;">Trạng thái hệ thống</div>
     """, unsafe_allow_html=True)
 
-    # Render free tier: route "/" có thể trống, dùng endpoint thực tế để ping
-    # Tăng timeout lên 15s để chờ wake-up
     try:
-        r = requests.get(
-            f"{BACKEND_URL}/check-environment?location=test",
-            timeout=15
-        )
-        backend_ok = r.status_code in [200, 422, 400]  # 422/400 = server sống, chỉ thiếu param
+        r = requests.get(f"{BACKEND_URL}/check-environment?location=test", timeout=15)
+        backend_ok = r.status_code in [200, 422, 400]
     except requests.exceptions.Timeout:
-        backend_ok = None   # None = đang wake up
+        backend_ok = None
     except Exception:
         backend_ok = False
 
-    badge_style = "padding:7px 10px;border-radius:8px;margin-bottom:6px;font-size:0.81rem;"
+    badge_base = "padding:6px 12px;border-radius:100px;margin-bottom:6px;font-size:0.8rem;display:inline-flex;align-items:center;gap:6px;font-family:'Roboto',sans-serif;"
     if backend_ok is True:
-        st.markdown(f'<div style="{badge_style}background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);color:#6ee7b7;">● Backend: Online</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="{badge_base}background:#e6f4ea;color:#137333;border:1px solid #ceead6;">● Backend: Online</div>', unsafe_allow_html=True)
     elif backend_ok is None:
-        st.markdown(f'<div style="{badge_style}background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);color:#fcd34d;">⏳ Backend: Đang khởi động...</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="{badge_base}background:#fef7e0;color:#b06000;border:1px solid #fde293;">⏳ Backend: Đang khởi động...</div>', unsafe_allow_html=True)
     else:
-        st.markdown(f'<div style="{badge_style}background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#fca5a5;">● Backend: Offline</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="{badge_base}background:#fce8e6;color:#c5221f;border:1px solid #f5c6c3;">● Backend: Offline</div>', unsafe_allow_html=True)
 
     if st.session_state.get("chat_session"):
-        st.markdown(f'<div style="{badge_style}background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.25);color:#7dd3fc;">● Gemini AI: Sẵn sàng</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="{badge_base}background:#e8f0fe;color:#1967d2;border:1px solid #c5d5f8;">● Gemini AI: Sẵn sàng</div>', unsafe_allow_html=True)
     else:
-        st.markdown(f'<div style="{badge_style}background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#fca5a5;">● Gemini AI: Lỗi API Key</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="{badge_base}background:#fce8e6;color:#c5221f;border:1px solid #f5c6c3;">● Gemini AI: Lỗi API Key</div>', unsafe_allow_html=True)
 
     st.markdown("""
-    <div style="height:1px;background:#3a3a3a;margin:1.2rem 0;"></div>
-    <div style="font-size:0.67rem;font-weight:600;color:#6b6b6b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.6rem;">Khu vực theo dõi</div>
+    <div style="height:1px;background:#e3e3e3;margin:1.2rem 0;"></div>
+    <div style="font-size:0.67rem;font-weight:500;color:#747775;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem;font-family:'Roboto',sans-serif;">Khu vực theo dõi</div>
     """, unsafe_allow_html=True)
 
-    for loc, dot in [("Bến Tre","🟢"),("Cà Mau","🟡"),("Sóc Trăng","🟢"),("Bạc Liêu","🔴"),("Tiền Giang","🟢"),("Kiên Giang","🟡")]:
-        st.markdown(f'<div style="padding:6px 10px;border-radius:7px;color:#a0a0a0;font-size:0.83rem;margin-bottom:2px;">{dot} {loc}</div>', unsafe_allow_html=True)
+    for loc, dot, color in [
+        ("Bến Tre","●","#137333"),("Cà Mau","●","#b06000"),("Sóc Trăng","●","#137333"),
+        ("Bạc Liêu","●","#c5221f"),("Tiền Giang","●","#137333"),("Kiên Giang","●","#b06000")
+    ]:
+        st.markdown(f'<div style="padding:6px 10px;border-radius:8px;color:#444746;font-size:0.83rem;margin-bottom:2px;font-family:Roboto,sans-serif;"><span style="color:{color}">{dot}</span> {loc}</div>', unsafe_allow_html=True)
 
-    st.markdown('<div style="height:1px;background:#3a3a3a;margin:1.2rem 0;"></div>', unsafe_allow_html=True)
+    st.markdown('<div style="height:1px;background:#e3e3e3;margin:1.2rem 0;"></div>', unsafe_allow_html=True)
 
-    # Nút xóa (không dùng absolute position – tránh đè lên nhau)
     if st.button("🗑️ Xóa lịch sử trò chuyện"):
         st.session_state.messages = []
         st.rerun()
 
-    st.markdown('<div style="margin-top:1rem;font-size:0.67rem;color:#4a4a4a;text-align:center;line-height:1.7;">© 2026 AquaAI Enterprise<br>Giải pháp số nông nghiệp ĐBSCL</div>', unsafe_allow_html=True)
+    st.markdown('<div style="margin-top:1rem;font-size:0.67rem;color:#c4c7c5;text-align:center;line-height:1.7;font-family:Roboto,sans-serif;">© 2026 AquaAI Enterprise<br>Giải pháp số nông nghiệp ĐBSCL</div>', unsafe_allow_html=True)
 
 
 # ===================== MAIN =====================
 
-# Header
+# Gemini-style Hero Header
 st.markdown("""
-<div style="margin-bottom:2rem;">
-    <h1 style="font-size:1.4rem;font-weight:700;color:#ececec;margin:0;letter-spacing:-0.02em;">
-        🦐 Trung tâm Giám sát Thủy sản ĐBSCL
-    </h1>
-    <p style="color:#6b6b6b;font-size:0.85rem;margin:0.25rem 0 0 0;">
-        Phân tích môi trường & tư vấn rủi ro theo thời gian thực
-    </p>
+<div style="margin-bottom:2.5rem;padding-top:0.5rem;">
+    <p class="hero-greeting">Xin chào, Bà con. 🦐</p>
+    <p class="hero-sub">Hôm nay ao nuôi thế nào?</p>
 </div>
 """, unsafe_allow_html=True)
 
 # Metrics
-st.markdown('<div style="font-size:0.67rem;font-weight:600;color:#6b6b6b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem;">Tổng quan hôm nay</div>', unsafe_allow_html=True)
+st.markdown('<div style="font-size:0.7rem;font-weight:500;color:#747775;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.85rem;font-family:Roboto,sans-serif;">Tổng quan hôm nay</div>', unsafe_allow_html=True)
 m1, m2, m3, m4 = st.columns(4)
 m1.metric("🌡️ Môi trường", "Tối ưu")
 m2.metric("⚠️ Chỉ số rủi ro", "15%", delta="-5%", delta_color="inverse")
@@ -345,58 +389,76 @@ m4.metric("🦐 Vụ nuôi", "Tuần 12")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# Biểu đồ
-st.markdown('<div style="font-size:0.67rem;font-weight:600;color:#6b6b6b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem;">Phân tích & Dự báo rủi ro – 7 ngày tới</div>', unsafe_allow_html=True)
+# Chart
+st.markdown('<div style="font-size:0.7rem;font-weight:500;color:#747775;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.85rem;font-family:Roboto,sans-serif;">Phân tích & Dự báo rủi ro – 7 ngày tới</div>', unsafe_allow_html=True)
 
 days = ["14/4","15/4","16/4","17/4","18/4","19/4","20/4"]
 shock_heat    = [10, 15, 12, 45, 80, 20, 15]
 salinity_drop = [5,  5,  8,  30, 95, 40, 10]
 
 fig = go.Figure()
-fig.add_trace(go.Scatter(x=days, y=shock_heat, name="Sốc nhiệt (%)",
-    mode="lines+markers", line=dict(color="#0EA5E9", width=2.5),
-    marker=dict(size=7), fill="tozeroy", fillcolor="rgba(14,165,233,0.1)"))
-fig.add_trace(go.Scatter(x=days, y=salinity_drop, name="Giảm mặn (%)",
-    mode="lines+markers", line=dict(color="#10B981", width=2.5, dash="dot"),
-    marker=dict(size=7, symbol="diamond"), fill="tozeroy", fillcolor="rgba(16,185,129,0.07)"))
-fig.add_hrect(y0=50, y1=105, fillcolor="rgba(239,68,68,0.06)", line_width=0,
+fig.add_trace(go.Scatter(
+    x=days, y=shock_heat, name="Sốc nhiệt (%)",
+    mode="lines+markers",
+    line=dict(color="#0b57d0", width=2.5),
+    marker=dict(size=7, color="#0b57d0"),
+    fill="tozeroy", fillcolor="rgba(11,87,208,0.08)"
+))
+fig.add_trace(go.Scatter(
+    x=days, y=salinity_drop, name="Giảm mặn (%)",
+    mode="lines+markers",
+    line=dict(color="#c2185b", width=2.5, dash="dot"),
+    marker=dict(size=7, symbol="diamond", color="#c2185b"),
+    fill="tozeroy", fillcolor="rgba(194,24,91,0.06)"
+))
+fig.add_hrect(
+    y0=50, y1=105, fillcolor="rgba(197,34,31,0.05)", line_width=0,
     annotation_text="⚠️ Ngưỡng nguy hiểm", annotation_position="top right",
-    annotation_font_color="#EF4444", annotation_font_size=11)
+    annotation_font_color="#c5221f", annotation_font_size=11
+)
 fig.update_layout(
     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="Inter, sans-serif", color="#a0a0a0", size=12),
-    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
-        bgcolor="rgba(47,47,47,0.95)", bordercolor="#3a3a3a", borderwidth=1,
-        font=dict(color="#ececec")),
-    xaxis=dict(gridcolor="#2a2a2a", linecolor="#3a3a3a", tickfont=dict(color="#a0a0a0")),
-    yaxis=dict(gridcolor="#2a2a2a", linecolor="#3a3a3a", tickfont=dict(color="#a0a0a0"),
-        range=[0, 105], ticksuffix="%"),
+    font=dict(family="Roboto, Google Sans, sans-serif", color="#747775", size=12),
+    legend=dict(
+        orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
+        bgcolor="rgba(255,255,255,0.95)", bordercolor="#e3e3e3", borderwidth=1,
+        font=dict(color="#1f1f1f")
+    ),
+    xaxis=dict(gridcolor="#f0f0f0", linecolor="#e3e3e3", tickfont=dict(color="#747775")),
+    yaxis=dict(
+        gridcolor="#f0f0f0", linecolor="#e3e3e3", tickfont=dict(color="#747775"),
+        range=[0, 105], ticksuffix="%"
+    ),
     hovermode="x unified",
-    hoverlabel=dict(bgcolor="#2f2f2f", font_color="#ececec", bordercolor="#444"),
+    hoverlabel=dict(bgcolor="#ffffff", font_color="#1f1f1f", bordercolor="#e3e3e3"),
     margin=dict(l=10, r=10, t=40, b=10), height=300,
 )
 st.plotly_chart(fig, use_container_width=True)
 st.caption("📡 Dữ liệu AI phân tích từ vệ tinh & trạm đo khu vực ĐBSCL. Cảnh báo bão dự kiến 17–18/4.")
 
 st.markdown("<br>", unsafe_allow_html=True)
-st.markdown('<div style="height:1px;background:#3a3a3a;margin-bottom:1.5rem;"></div>', unsafe_allow_html=True)
+st.markdown('<div style="height:1px;background:#e3e3e3;margin-bottom:1.5rem;"></div>', unsafe_allow_html=True)
 
 # Chat section
 st.markdown("""
-<div style="margin-bottom:1rem;">
-    <div style="font-size:0.95rem;font-weight:600;color:#ececec;">💬 Cố vấn Thủy sản AI</div>
-    <div style="color:#6b6b6b;font-size:0.8rem;margin-top:0.2rem;">Hỏi về môi trường ao nuôi, thời tiết, dịch bệnh – AI phân tích và trả lời ngay</div>
+<div style="margin-bottom:1.2rem;">
+    <div style="font-size:0.95rem;font-weight:500;color:#1f1f1f;font-family:'Google Sans','Roboto',sans-serif;">💬 Cố vấn Thủy sản AI</div>
+    <div style="color:#747775;font-size:0.82rem;margin-top:0.25rem;font-family:'Roboto',sans-serif;">
+        Hỏi về môi trường ao nuôi, thời tiết, dịch bệnh – AI phân tích và trả lời ngay
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
-# Gợi ý nhanh
+# Quick suggestions – Gemini card style (4 cards)
 if not st.session_state.get("messages"):
-    c1, c2, c3 = st.columns(3)
-    for col, (label, prompt_text) in zip([c1, c2, c3], [
-        ("🌊 Thời tiết hôm nay", "Thời tiết Bến Tre hôm nay thế nào?"),
-        ("⚠️ Dự báo bão", "Bão ảnh hưởng ao nuôi ra sao?"),
-        ("🦠 Phòng bệnh tôm",  "Phòng bệnh đốm trắng mùa mưa thế nào?"),
-    ]):
+    c1, c2, c3, c4 = st.columns(4)
+    suggestions = [
+        ("🌊 Thời tiết\nhôm nay", "Thời tiết Bến Tre hôm nay thế nào?"),
+        ("⚠️ Dự báo\nbão", "Bão ảnh hưởng ao nuôi ra sao?"),
+        ("🦠 Phòng bệnh\ntôm", "Phòng bệnh đốm trắng mùa mưa thế nào?"),
+        ("🧪 Kiểm tra\nnước", "Chỉ số pH và oxy ao tôm cần đạt bao nhiêu?"),
+    ]
+    for col, (label, prompt_text) in zip([c1, c2, c3, c4], suggestions):
         with col:
             st.markdown('<div class="suggest-btn">', unsafe_allow_html=True)
             if st.button(label, key=f"s_{label}", use_container_width=True):
@@ -435,5 +497,5 @@ if prompt:
                     st.session_state.messages.append({"role": "assistant", "content": err})
 
 # Footer
-st.markdown('<div style="height:1px;background:#3a3a3a;margin:2.5rem 0 1rem 0;"></div>', unsafe_allow_html=True)
-st.markdown('<div style="text-align:center;color:#4a4a4a;font-size:0.73rem;">© 2026 <span style="color:#0EA5E9;font-weight:500;">AquaAI Enterprise</span> · Giải pháp chuyển đổi số nông nghiệp ĐBSCL · Powered by Google Gemini AI</div>', unsafe_allow_html=True)
+st.markdown('<div style="height:1px;background:#e3e3e3;margin:2.5rem 0 1rem 0;"></div>', unsafe_allow_html=True)
+st.markdown('<div style="text-align:center;color:#c4c7c5;font-size:0.73rem;font-family:Roboto,sans-serif;">© 2026 <span style="color:#0b57d0;font-weight:500;">AquaAI Enterprise</span> · Giải pháp chuyển đổi số nông nghiệp ĐBSCL · Powered by Google Gemini AI</div>', unsafe_allow_html=True)
